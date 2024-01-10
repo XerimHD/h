@@ -6,12 +6,10 @@ using namespace std;
 void dangens(bool &t_placed, int &r_placed, bool &p_placed, int rows, int cols, vector<vector<char>> &map);
 
 void movement(int &c, vector<vector<char>> &map);
-int px, py;         // координата игрока
-int tx, ty;         // координата гоблина
-int rx = 0, ry = 0; // кордината комнаты
+int px, py; // координата игрока
+int tx, ty; // координата гоблина
 int p_gold = 0;
-int r_size_x, r_size_y;
-int rum_num = 2;
+
 int main()
 {
 
@@ -29,7 +27,7 @@ int main()
     {
         getmaxyx(stdscr, rows, cols);
         vector<vector<char>> map(rows, vector<char>(cols));
-
+        // erase(); // очистка екрана
         dangens(t_placed, r_placed, p_placed, rows, cols, map);
         movement(c, map);
         refresh();                 // Обновление экрана
@@ -44,35 +42,82 @@ int main()
 
 void dangens(bool &t_placed, int &r_placed, bool &p_placed, int rows, int cols, vector<vector<char>> &map)
 {
+    srand(time(0));
 
+    bool collision = false;
     resize_term(rows, cols); // Изменение размеров терминала
+    if (!r_placed)
+    {
+        int rx = 0, ry = 0;            // кордината комнаты
+        int r_size_x, r_size_y;        // размер комнаты
+        int room_num = rand() % 5 + 3; // число комнат
 
-    /*if (!r_placed) // создания комнаты
-    {
-        // rand() % 5 + 5;
-        ry = rand() % (rows - 4) + 1;
-        rx = rand() % (cols - 4) + 1;
-        r_size_y = rand() % 5 + 5;
-        r_size_x = rand() % 10 + 5;
-        }*/
-    /// база даных
-    for (int y = 0; y < rows; y++)
-    {
-        for (int x = 0; x < cols; x++)
+        /// база даных
+        for (int y = 0; y < rows; y++)
         {
+            for (int x = 0; x < cols; x++)
+            {
 
-            if (y == 0 || y == rows - 2 || x == 0 || x == cols - 1)
-            {
-                map[y][x] = '%'; // записываем  барьер в базу
-            }
-            else
-            {
-                map[y][x] = '#'; // записываем  стену в базу
+                if (y == 0 || y == rows - 2 || x == 0 || x == cols - 1)
+                {
+                    map[y][x] = '%'; // записываем  барьер в базу
+                }
+                else
+                {
+                    map[y][x] = '#'; // записываем  стену в базу
+                }
             }
         }
+
+        do
+        {
+            int try_counter = 0; //  изменяряет попытки генерации комнат
+            do
+            {
+                collision = false;
+                // делаем кординаты комнате
+                ry = rand() % (rows - 4) + 1;
+                rx = rand() % (cols - 4) + 1;
+                r_size_y = rand() % 5 + 4;
+                r_size_x = rand() % 10 + 8;
+                for (int y = ry; y < ry + r_size_y; y++)
+                {
+                    // try_counter изменяряет попытки генерации комнат
+                    for (int x = rx; x < rx + r_size_x; x++)
+                    {
+                        if (map[y][x] == '%' || map[y][x] == ' ' || map[y + 2][x] == ' ' || map[y - 2][x] == ' ' || map[y][x + 2] == ' ' || map[y][x - 2] == ' ')
+                        {
+                            collision = true;
+                            y = ry + r_size_y;
+                            break;
+                        }
+                    }
+                }
+                try_counter++;
+
+            } while (collision == true && try_counter <= 100);
+
+            // записывыем в базу комнаты
+            for (int y = ry; y < ry + r_size_y; y++)
+            {
+                for (int x = rx; x < rx + r_size_x; x++)
+                {
+                    if (map[y][x] == '%')
+                    {
+                        y = ry + r_size_y;
+                        break;
+                    }
+                    else
+                    {
+                        map[y][x] = ' ';
+                    }
+                }
+            }
+            r_placed++;
+        } while (r_placed < room_num);
     }
 
-    /// рисования стен
+    ///// рисования данжа
     for (int y = 0; y < rows; y++)
     {
         for (int x = 0; x < cols; x++)
@@ -82,51 +127,16 @@ void dangens(bool &t_placed, int &r_placed, bool &p_placed, int rows, int cols, 
             {
                 mvaddch(y, x, '%'); // рисуем  барьер
             }
-
-            else if (map[y][x] == '#')
+            else if (map[y][x] == ' ') // рисуем комнату
+            {
+                mvaddch(y, x, ' ');
+            }
+            else
             {
                 mvaddch(y, x, '#'); // рисуем  стену
             }
         }
     }
-
-    do
-    {
-
-        ry = rand() % (rows - 4) + 1;
-        rx = rand() % (cols - 4) + 1;
-        r_size_y = rand() % 5 + 5;
-        r_size_x = rand() % 10 + 5;
-
-        // записываем в базу комнаты
-        for (int y = ry; y < ry + r_size_y; y++)
-        {
-            for (int x = rx; x < rx + r_size_x; x++)
-            {
-                if (map[y][x] != '%')
-                {
-                    map[y][x] = ' ';
-                }
-            }
-        }
-
-        /// рисуем комнату
-        for (int y = ry; y < ry + r_size_y; y++)
-        {
-            for (int x = rx; x < rx + r_size_x; x++)
-            {
-                if (map[y][x] == ' ')
-                {
-                    mvaddch(y, x, ' ');
-                }
-                else if (map[y][x] == '#')
-                {
-                    mvaddch(y, x, '#');
-                }
-            }
-        }
-        r_placed++;
-    } while (r_placed <= rum_num);
 
     //////////////////////////////////////////////////////////
     // чистим последню строку для информации
@@ -135,6 +145,7 @@ void dangens(bool &t_placed, int &r_placed, bool &p_placed, int rows, int cols, 
         mvaddch(rows - 1, x, ' ');
     }
 
+    ////////
     if (!t_placed)
     {
 
